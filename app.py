@@ -1,6 +1,4 @@
 from flask import Flask, jsonify
-from itsdangerous import json
-import numpy as np
 import datetime as dt
 
 import sqlalchemy
@@ -40,13 +38,15 @@ app = Flask(__name__)
 def home():
 
     return(
-        f"Welcome!<br>"
-        f"Available Routes:<br>"
+        f"Welcome!<br><br>"
+        f"This API grabs past weather data (2010 - 2017) from 9 stations in Hawaii. Enjoy!<br>"
+        f"Available Routes:<br><br>"
         f"/api/v1.0/precipitation<br>"
         f"/api/v1.0/stations<br>"
-        f"/api/v1.0/tabs<br>"
+        f"/api/v1.0/tobs<br>"
         f"/api/v1.0/&ltstart&gt<br>"
-        f"/api/v1.0/&ltstart&gt/&ltend&gt"
+        f"/api/v1.0/&ltstart&gt/&ltend&gt<br><br>"
+        f"Make sure dates are in the following format: YYYY-MM-DD"
     )
 
 # Precipitation data
@@ -56,8 +56,9 @@ def precipitation():
     
     # Calculate the date one year from the last date in data set.
     last_date = session.query(Measurement.date).order_by(Measurement.date).all()[-1]
-    date = dt.datetime.strptime(last_date[0], '%Y-%m-%d')
-    year_ago = date - dt.timedelta(days=366)
+    last_date = dt.datetime.strptime(last_date[0], '%Y-%m-%d')
+    year_ago = last_date.replace(year=last_date.year - 1)
+    year_ago = dt.datetime.strftime(year_ago, '%Y-%m-%d')
 
     # Perform a query to retrieve the data and precipitation scores
     sel = [Measurement.date, Measurement.prcp]
@@ -81,12 +82,11 @@ def stations():
 
     session.close()
 
-    stations = []
-    for res in results:
-        stations.append(res)
+    stations = [res[0] for res in results]
     
     return jsonify(stations)
 
+# Temperature data from most activate station 
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
